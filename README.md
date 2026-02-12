@@ -1,64 +1,65 @@
 # Says So Agent
 
-AI-powered agent that analyzes public user sentiment for any product or service using real Twitter/X and Reddit data, accessed through delegated authenticated sessions on the Sela Network.
+AI-powered agent that retrieves and summarizes a Twitter/X user's recent tweeting activity using authenticated sessions on the Sela Network.
 
 ## How It Works
 
-1. You ask about a product or service (e.g. "Cursor", "Notion", "ChatGPT")
-2. The agent searches Twitter/X and Reddit via the Sela P2P network using delegated logged-in browser sessions
-3. It collects up to 20 posts per platform and feeds them to OpenAI for analysis
-4. You get a structured sentiment summary: **positive**, **negative**, **neutral**, or **mixed** — with supporting reasoning
+1. You provide a Twitter/X username (e.g. `@elonmusk` or `elonmusk 20`)
+2. The agent fetches recent tweets via the Sela P2P network using delegated logged-in browser sessions
+3. It feeds the collected tweets to OpenAI for a factual activity summary
+4. You get a structured report: posting frequency, main topics, content breakdown, notable observations, and engagement snapshot
 
-The agent only **reads** public posts. It never posts, likes, replies, or interacts on any platform.
+The agent only **reads** public tweets. It never posts, likes, replies, or interacts on any platform.
 
 ## Example Output
 
-> ### 1) Sentiment Summary
-> - **Overall sentiment:** positive
-> - Users widely praise the product's speed and responsiveness
-> - Multiple posts highlight recent improvements to the editing experience
-> - Some frustration around pricing changes, but outweighed by positive reception
-> - Community engagement is active with constructive feedback
+> ### Activity Summary for @username
 >
-> ### 2) Coverage Notes
-> - Platforms successfully analyzed: Twitter/X
-> - Reddit was not enabled for this analysis
-> - Content accessed via authenticated Sela Network sessions
+> *Retrieved 10 tweets via authenticated Sela Network session.*
 >
-> ### 3) Confidence & Unknowns
-> - Based on 9 recent posts from Twitter/X search results
-> - Sentiment is consistent across most posts, lending moderate confidence
-> - A broader sample across both platforms would strengthen the conclusion
+> **Posting frequency:** 10 tweets in the last 2 days, averaging ~5 tweets per day
+>
+> **Main topics:**
+> - Topic 1 — brief factual description
+> - Topic 2 — brief factual description
+>
+> **Content breakdown:**
+> - Original tweets: 7
+> - Replies: 2
+> - Retweets/quote-tweets: 1
+>
+> **Notable observations:**
+> - Factual patterns observed in the data
+>
+> **Engagement snapshot:**
+> - Highest-engagement tweet: brief description, ~500 likes
+> - Typical engagement range: 50-200 likes per tweet
 
 ## Architecture
 
 ```
 Browser (localhost:3000)
     |
-    |  Chat UI with real-time activity log
+    |  Static React app (built with Next.js export)
     |
     v
-Next.js API Route (/api/chat)
+FastAPI (Python, port 3000)
     |
-    |-- Searches Twitter/X + Reddit in parallel via @selanet/sdk
-    |-- Collects posts from delegated browser sessions on the P2P network
-    '-- Streams structured sentiment analysis from OpenAI
-            |
-            v
-      Sela P2P Network (libp2p + Kademlia DHT)
-            |
-            v
-      Agent Node (desktop app with Chrome CDP)
-      Browses platforms using delegated logged-in sessions
+    |-- GET /            Serves static React frontend from out/
+    |-- POST /api/chat   Fetches tweets via Sela + streams OpenAI summary
+    |
+    |-- Sela Python SDK (sela-browse-sdk) --> P2P Network --> Agent Node
+    '-- OpenAI Python SDK --> streaming response (Vercel AI data stream protocol)
 ```
 
 ## Prerequisites
 
-- **Node.js** >= 18
+- **Python** >= 3.9
+- **Node.js** >= 18 (for building the frontend)
 - **OpenAI API key** — get one at https://platform.openai.com/api-keys
-- **Sela Agent Node** — a running agent node that has been granted access to Twitter/X (and optionally Reddit) browser sessions. The agent node is a separate desktop application that connects to the Sela P2P network and provides authenticated browser access to clients like this one. You'll need to:
+- **Sela Agent Node** — a running agent node that has been granted access to Twitter/X browser sessions. The agent node is a separate desktop application that connects to the Sela P2P network and provides authenticated browser access to clients like this one. You'll need to:
   1. Install and run the Sela agent node
-  2. Complete onboarding by logging into Twitter/X (and optionally Reddit) through the agent node's browser
+  2. Complete onboarding by logging into Twitter/X through the agent node's browser
   3. Ensure the agent node is connected to the same Sela network (same bootstrap peers and Kademlia protocol)
 
 ## Quick Start
@@ -68,8 +69,15 @@ Next.js API Route (/api/chat)
 git clone https://github.com/vincent-contreras/says-so-agent.git
 cd says-so-agent
 
-# Install dependencies
+# Install frontend dependencies and build static site
 npm install
+npm run build
+
+# Set up Python environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+pip install backend/vendor/sela_browse_sdk-*.whl
 
 # Configure environment
 cp .env.example .env.local
@@ -85,86 +93,83 @@ OPENAI_API_KEY=sk-your-openai-key
 SELA_API_KEY=sk_live_your-sela-key
 BOOTSTRAP_PEERS=/dnsaddr/bootstrap.selanet.ai
 
-# Platforms to search (comma-separated: twitter,reddit)
-ENABLED_PLATFORMS=twitter
+# Optional
+SELA_SKIP_API_KEY_VALIDATION=true
 ```
 
-Start the dev server:
+Start the server:
 
 ```bash
-npm run dev
+source .venv/bin/activate
+python -m uvicorn backend.main:app --port 3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and ask about any product or service.
+Open [http://localhost:3000](http://localhost:3000) and enter a Twitter/X username.
 
 ## Environment Variables
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `OPENAI_API_KEY` | Yes | — | OpenAI API key for sentiment analysis |
+| `OPENAI_API_KEY` | Yes | — | OpenAI API key for tweet summarization |
 | `OPENAI_MODEL` | No | `gpt-4o` | OpenAI model to use |
 | `SELA_API_KEY` | Yes | — | API key for the Sela P2P network |
 | `BOOTSTRAP_PEERS` | Yes | — | Multiaddr of the Sela bootstrap node for DHT discovery |
-| `ENABLED_PLATFORMS` | No | `twitter` | Comma-separated list of platforms to search (`twitter`, `reddit`) |
+| `ENABLED_PLATFORMS` | No | `twitter` | Comma-separated list of enabled platforms |
 | `SELA_SKIP_API_KEY_VALIDATION` | No | `false` | Skip API key format validation (for dev/testing) |
-| `SELA_CONNECTION_TIMEOUT` | No | `30000` | Connection timeout in milliseconds |
-| `SELA_REQUEST_TIMEOUT` | No | `60000` | Request timeout in milliseconds |
 
 ## Project Structure
 
 ```
 says-so-agent/
+├── backend/
+│   ├── main.py                 # FastAPI app — static file serving + entrypoint
+│   ├── chat_route.py           # POST /api/chat — orchestrates Sela + OpenAI
+│   ├── sela_adapter.py         # SelaClient singleton — P2P connection + tweet fetching
+│   ├── tweet_summary_engine.py # Builds the OpenAI analysis prompt
+│   ├── data_stream.py          # Vercel AI SDK data stream protocol encoder
+│   ├── requirements.txt        # Python dependencies
+│   └── vendor/                 # Vendored sela-browse-sdk wheel
 ├── app/
-│   ├── api/chat/route.ts        # API route — orchestrates Sela search + OpenAI analysis
-│   ├── layout.tsx               # Root layout
-│   ├── page.tsx                 # Home page
-│   └── globals.css              # Global styles
+│   ├── layout.tsx              # Root layout
+│   ├── page.tsx                # Home page
+│   └── globals.css             # Global styles
 ├── components/
-│   ├── chat.tsx                 # Main chat UI with activity log integration
-│   ├── chat-messages.tsx        # Message list with auto-scroll
-│   ├── chat-input.tsx           # Auto-resizing input textarea
-│   ├── message.tsx              # Individual message with markdown rendering
-│   ├── activity-log.tsx         # Real-time Sela browsing activity panel
-│   ├── sidebar.tsx              # Conversation history sidebar
-│   └── icons.tsx                # SVG icons (Twitter, Reddit, activity, etc.)
+│   ├── chat.tsx                # Main chat UI with activity log integration
+│   ├── chat-messages.tsx       # Message list with auto-scroll
+│   ├── chat-input.tsx          # Auto-resizing input textarea
+│   ├── message.tsx             # Individual message with markdown rendering
+│   ├── activity-log.tsx        # Real-time Sela browsing activity panel
+│   ├── sidebar.tsx             # Conversation history sidebar
+│   └── icons.tsx               # SVG icons
 ├── lib/
-│   ├── sela-adapter.ts          # Sela SDK wrapper — singleton client, search, browse
-│   ├── sentiment-engine.ts      # Builds the analysis prompt from collected posts
-│   ├── agent.ts                 # Loads the agent system prompt
-│   ├── types.ts                 # Shared TypeScript types
+│   ├── sela-adapter.ts         # (Legacy) Node.js Sela SDK wrapper
+│   ├── tweet-summary-engine.ts # (Legacy) Node.js prompt builder
+│   ├── agent.ts                # Loads the agent system prompt
+│   ├── types.ts                # Shared TypeScript types
 │   └── hooks/
 │       └── use-local-storage.ts # Conversation persistence
-├── agents/default/AGENT.md      # Agent system prompt defining behavior and rules
-├── vendor/@selanet/sdk/         # Vendored Sela SDK (native Node.js addon)
-├── .env.example                 # Environment variable template
-└── next.config.js               # Webpack config for native addon support
+├── agents/default/AGENT.md     # Agent system prompt defining behavior and rules
+├── out/                        # Static React build (generated, gitignored)
+├── .env.example                # Environment variable template
+└── next.config.js              # Static export config
 ```
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router)
-- **UI:** React 19, Tailwind CSS 3.4
-- **LLM:** OpenAI (gpt-4o) via Vercel AI SDK
-- **Data Access:** Sela Network P2P SDK (native Node.js addon built with napi-rs)
+- **Backend:** Python FastAPI + uvicorn
+- **Frontend:** Next.js 15 (static export), React 19, Tailwind CSS 3.4
+- **LLM:** OpenAI (gpt-4o) via Python SDK
+- **Data Access:** Sela Network Python SDK (sela-browse-sdk, native binary built with maturin/uniffi)
+- **Streaming:** Vercel AI SDK data stream protocol (frontend `useChat()` hook)
 
 ## Privacy & Safety
 
-- Read-only access — never posts, likes, replies, votes, or sends messages
-- Never deanonymizes users or exposes usernames
-- Never quotes private content or accesses non-public data
+- Read-only access — never posts, likes, replies, or interacts
+- Never exposes private information or non-public content
 - All platform access goes through authenticated Sela Network sessions, clearly disclosed in output
-- If data can't be accessed (rate limits, login failure, anti-bot detection), the agent states the limitation explicitly
-- If sentiment is unclear, the agent outputs "Sentiment is mixed or inconclusive" rather than guessing
-
-## Development
-
-```bash
-npm run dev       # Start development server
-npm run build     # Production build
-npm run start     # Start production server
-npm run lint      # Run ESLint
-```
+- No sentiment analysis or opinion — purely factual activity summaries
+- If data can't be accessed, the agent states the limitation explicitly
 
 ## Platform Support
 
-The vendored `@selanet/sdk` includes a prebuilt native binary for **macOS Apple Silicon (arm64)** only. To run on other platforms (macOS x64, Linux, Windows), the native addon must be rebuilt from the Sela SDK source for your target architecture.
+The vendored `sela-browse-sdk` wheel is built for **macOS Apple Silicon (arm64)** only. To run on other platforms, rebuild the wheel from the Sela SDK source using `maturin build --release`.
