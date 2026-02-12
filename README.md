@@ -142,9 +142,6 @@ says-so-agent/
 │   ├── sidebar.tsx             # Conversation history sidebar
 │   └── icons.tsx               # SVG icons
 ├── lib/
-│   ├── sela-adapter.ts         # (Legacy) Node.js Sela SDK wrapper
-│   ├── tweet-summary-engine.ts # (Legacy) Node.js prompt builder
-│   ├── agent.ts                # Loads the agent system prompt
 │   ├── types.ts                # Shared TypeScript types
 │   └── hooks/
 │       └── use-local-storage.ts # Conversation persistence
