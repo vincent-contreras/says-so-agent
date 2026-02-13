@@ -1,7 +1,7 @@
 "use client";
 
 import { clsx } from "clsx";
-import { ActivityIcon, TwitterIcon, RedditIcon, XIcon, SearchIcon } from "./icons";
+import { ActivityIcon, TwitterIcon, XIcon, SearchIcon } from "./icons";
 import type { ActivityLogEntry } from "@/lib/types";
 
 interface ActivityLogProps {
@@ -14,8 +14,6 @@ function PlatformIcon({ platform }: { platform: ActivityLogEntry["platform"] }) 
   switch (platform) {
     case "twitter":
       return <TwitterIcon className="w-4 h-4" />;
-    case "reddit":
-      return <RedditIcon className="w-4 h-4" />;
     default:
       return <ActivityIcon className="w-4 h-4" />;
   }
@@ -105,8 +103,8 @@ export function ActivityLog({ entries, isOpen, onClose }: ActivityLogProps) {
         </div>
 
         <div className="p-3 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500">
-          <p>Showing Sela Network browsing activity.</p>
-          <p>All content accessed via authenticated sessions.</p>
+          <p>Showing Sela Network API activity.</p>
+          <p>All content accessed via the Sela Network API.</p>
         </div>
       </aside>
     </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchIcon, SpinnerIcon, TwitterIcon, RedditIcon } from "./icons";
+import { SearchIcon, SpinnerIcon, TwitterIcon } from "./icons";
 
 interface ToolInvocationProps {
   toolName: string;
@@ -15,12 +15,6 @@ export function ToolInvocation({ toolName, state, args }: ToolInvocationProps) {
         return {
           label: "Searching Twitter/X",
           icon: <TwitterIcon className="w-4 h-4" />,
-          description: args?.query ? `"${args.query}"` : "Searching posts...",
-        };
-      case "sela_search_reddit":
-        return {
-          label: "Searching Reddit",
-          icon: <RedditIcon className="w-4 h-4" />,
           description: args?.query ? `"${args.query}"` : "Searching posts...",
         };
       case "sela_browse":

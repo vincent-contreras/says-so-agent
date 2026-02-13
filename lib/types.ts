@@ -34,7 +34,7 @@ export interface ActivityLogEntry {
   id: string;
   timestamp: Date;
   type: "search" | "browse" | "error" | "info";
-  platform: "twitter" | "reddit" | "system";
+  platform: "twitter" | "system";
   message: string;
   url?: string;
   details?: string;

@@ -7,7 +7,6 @@ Usage:
 """
 
 import os
-from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -24,16 +23,9 @@ elif env_file.exists():
     load_dotenv(env_file, override=True)
 
 from backend.chat_route import router as chat_router
-from backend.sela_adapter import shutdown_client
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    yield
-    await shutdown_client()
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 # Mount the chat API
 app.include_router(chat_router)

@@ -28,14 +28,12 @@ def build_tweet_summary_prompt(
     tweet_entries: list[str] = []
     for i, item in enumerate(tweets.items):
         f = item.fields
-        content = f.get("content") or f.get("text") or f.get("title") or ""
-        likes = f.get("like_count") or f.get("likes") or ""
-        retweets = f.get("retweet_count") or f.get("retweets") or ""
-        replies = f.get("reply_count") or f.get("replies") or ""
-        timestamp = f.get("timestamp") or f.get("date") or f.get("time") or ""
-        author = f.get("author_name") or f.get("author") or ""
-        is_reply = f.get("is_reply") or f.get("in_reply_to") or ""
-        is_retweet = f.get("is_retweet") or f.get("retweeted") or ""
+        content = f.get("content") or ""
+        likes = f.get("likesCount") or ""
+        retweets = f.get("retweetsCount") or ""
+        replies = f.get("repliesCount") or ""
+        timestamp = f.get("postedAt") or ""
+        author = f.get("username") or ""
 
         entry = f"{i + 1}. {str(content)[:400]}"
         if timestamp:
@@ -48,10 +46,6 @@ def build_tweet_summary_prompt(
             entry += f" | Replies: {replies}"
         if author and str(author).lower() != username.lower():
             entry += f" | Author: {author}"
-        if is_reply:
-            entry += " | [Reply]"
-        if is_retweet:
-            entry += " | [Retweet]"
         tweet_entries.append(entry)
 
     retrieved_count = len(tweets.items)
@@ -63,7 +57,7 @@ def build_tweet_summary_prompt(
 
 ## Retrieved Data
 
-**Tweets retrieved:** {retrieved_count} (via authenticated Sela Network session)
+**Tweets retrieved:** {retrieved_count} (via Sela Network API)
 {fewer_note}
 
 {chr(10).join(chr(10).join(['', e]) for e in tweet_entries)}
@@ -72,7 +66,7 @@ def build_tweet_summary_prompt(
 
 Based ONLY on the tweets above, produce an activity summary following the exact structure from your system prompt:
 - Activity Summary header with @{username}
-- "Retrieved N tweets via authenticated Sela Network session."
+- "Retrieved N tweets via Sela Network API."
 - Posting frequency
 - Main topics (grouped by theme, specific not vague)
 - Content breakdown (originals / replies / retweets / threads)
@@ -85,4 +79,4 @@ RULES:
 - Group by topic, not chronology.
 - Do not reproduce full tweet text.
 - Do not expose private information.
-- State that content was accessed via an authenticated Sela Network session."""
+- State that content was accessed via the Sela Network API."""
